@@ -8,27 +8,27 @@ fi
 
 # Запускаем ffmpeg в фоне
 (
-  while true; do
-    # Берём первый рабочий поток вместо последнего
-    HLS_URL="$(yt-dlp -f 'best[ext=mp4]' -g "$YT_URL" 2>/dev/null | head -n 1)"
-    if [ -z "$HLS_URL" ]; then
-      echo "Failed to get HLS URL. Retry in 10s..."
-      sleep 10
-      continue
-    fi
+while true; do
+  HLS_URL="$(yt-dlp -f 'bestvideo+bestaudio' --merge-output-format mp4 -g "$YT_URL" 2>/dev/null | head -n 1)"
+  if [ -z "$HLS_URL" ]; then
+    echo "Failed to get HLS URL. Retry in 10s..."
+    sleep 10
+    continue
+  fi
 
-    echo "Relay: $HLS_URL -> rtmp://$TG_RTMP/$TG_KEY"
+  echo "Relay: $HLS_URL -> rtmp://$TG_RTMP/$TG_KEY"
 
-    ffmpeg -hide_banner -loglevel warning \
-      -re -i "$HLS_URL" \
-      -vf "scale=1080:-2, pad=1080:1920:(ow-iw)/2:(oh-ih)/2, fps=${FPS}" \
-      -c:v libx264 -preset "${X264_PRESET}" -b:v "${VIDEO_BITRATE}" -maxrate "${VIDEO_BITRATE}" -bufsize "$((2*${VIDEO_BITRATE%k}))k" \
-      -c:a aac -b:a "${AUDIO_BITRATE}" -ar 44100 \
-      -f flv "rtmp://$TG_RTMP/$TG_KEY"
+  ffmpeg -hide_banner -loglevel warning \
+    -re -i "$HLS_URL" \
+    -vf "scale=1080:-2, pad=1080:1920:(ow-iw)/2:(oh-ih)/2, fps=${FPS}" \
+    -c:v libx264 -preset "${X264_PRESET}" -b:v "${VIDEO_BITRATE}" -maxrate "${VIDEO_BITRATE}" -bufsize "$((2*${VIDEO_BITRATE%k}))k" \
+    -c:a aac -b:a "${AUDIO_BITRATE}" -ar 44100 \
+    -f flv "rtmp://$TG_RTMP/$TG_KEY"
 
-    echo "FFmpeg exited. Reconnect in 5s..."
-    sleep 5
-  done
+  echo "FFmpeg exited. Reconnect in 5s..."
+  sleep 5
+done
+
 ) &
 
 # Минимальный HTTP-сервер для Render health check
