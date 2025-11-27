@@ -19,4 +19,6 @@ ENV AUDIO_BITRATE="128k"
 ENV FPS="30"
 ENV X264_PRESET="veryfast"
 
+# Запускаем скрипт
 CMD ["/start.sh"]
+
