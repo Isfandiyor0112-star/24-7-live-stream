@@ -9,7 +9,7 @@ fi
 # Запускаем ffmpeg в фоне
 (
   while true; do
-    HLS_URL="$(yt-dlp -g "$YT_URL" 2>/dev/null | tail -n 1)"
+    HLS_URL="$(yt-dlp -f 'best' -g "$YT_URL" 2>/dev/null | head -n 1)"
     if [ -z "$HLS_URL" ]; then
       echo "Failed to get HLS URL. Retry in 10s..."
       sleep 10
