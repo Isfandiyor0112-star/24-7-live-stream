@@ -8,30 +8,29 @@ fi
 
 # Запускаем ffmpeg в фоне
 (
-while true; do
-  # Получаем прямую ссылку на обычное видео
-  VIDEO_URL="$(yt-dlp -f 'bestvideo+bestaudio' --merge-output-format mp4 -g "$YT_URL" 2>/dev/null | head -n 1)"
-  if [ -z "$VIDEO_URL" ]; then
-    echo "Failed to get video URL. Retry in 10s..."
-    sleep 10
-    continue
-  fi
+  while true; do
+    echo "Downloading video from $YT_URL..."
+    yt-dlp -f "bestvideo+bestaudio" --merge-output-format mp4 -o video.mp4 "$YT_URL"
+    
+    if [ ! -f video.mp4 ]; then
+      echo "Download failed. Retry in 10s..."
+      sleep 10
+      continue
+    fi
 
-  echo "Relay: $VIDEO_URL -> rtmp://$TG_RTMP/$TG_KEY"
+    echo "Streaming video.mp4 -> rtmp://$TG_RTMP/$TG_KEY"
 
-  ffmpeg -hide_banner -loglevel warning \
-    -re -i "$VIDEO_URL" \
-    -vf "scale=1080:-2, pad=1080:1920:(ow-iw)/2:(oh-ih)/2, fps=${FPS}" \
-    -c:v libx264 -preset "${X264_PRESET}" -b:v "${VIDEO_BITRATE}" -maxrate "${VIDEO_BITRATE}" -bufsize "$((2*${VIDEO_BITRATE%k}))k" \
-    -c:a aac -b:a "${AUDIO_BITRATE}" -ar 44100 \
-    -f flv "rtmp://$TG_RTMP/$TG_KEY"
+    ffmpeg -hide_banner -loglevel warning \
+      -re -i video.mp4 \
+      -vf "scale=1080:-2, pad=1080:1920:(ow-iw)/2:(oh-ih)/2, fps=${FPS}" \
+      -c:v libx264 -preset "${X264_PRESET}" -b:v "${VIDEO_BITRATE}" -maxrate "${VIDEO_BITRATE}" -bufsize "$((2*${VIDEO_BITRATE%k}))k" \
+      -c:a aac -b:a "${AUDIO_BITRATE}" -ar 44100 \
+      -f flv "rtmp://$TG_RTMP/$TG_KEY"
 
-  echo "FFmpeg exited. Reconnect in 5s..."
-  sleep 5
-done
-
+    echo "FFmpeg exited. Reconnect in 5s..."
+    sleep 5
+  done
 ) &
 
 # Минимальный HTTP-сервер для Render health check
 python3 -m http.server 8080
-
