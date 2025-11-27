@@ -9,7 +9,8 @@ fi
 # Запускаем ffmpeg в фоне
 (
   while true; do
-    HLS_URL="$(yt-dlp -f 'best' -g "$YT_URL" 2>/dev/null | head -n 1)"
+    # Берём первый рабочий поток вместо последнего
+    HLS_URL="$(yt-dlp -f 'best[ext=mp4]' -g "$YT_URL" 2>/dev/null | head -n 1)"
     if [ -z "$HLS_URL" ]; then
       echo "Failed to get HLS URL. Retry in 10s..."
       sleep 10
@@ -32,3 +33,4 @@ fi
 
 # Минимальный HTTP-сервер для Render health check
 python3 -m http.server 8080
+
