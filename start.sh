@@ -6,7 +6,7 @@ if [ -z "$YT_URL" ] || [ -z "$TG_RTMP" ] || [ -z "$TG_KEY" ]; then
   exit 1
 fi
 
-# Функция получения прямой HLS ссылки для YouTube
+# Получаем прямую HLS ссылку на YouTube
 get_hls() {
   yt-dlp -g "$YT_URL" 2>/dev/null | tail -n 1
 }
@@ -21,6 +21,7 @@ while true; do
 
   echo "Relay: $HLS_URL -> rtmp://$TG_RTMP/$TG_KEY"
 
+  # ffmpeg гонит поток в Telegram
   ffmpeg -hide_banner -loglevel warning \
     -re -i "$HLS_URL" \
     -vf "fps=${FPS}" \
