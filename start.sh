@@ -8,12 +8,11 @@ fi
 
 (
   while true; do
-    echo "Streaming black screen + music -> rtmp://$TG_RTMP/$TG_KEY"
+    echo "Streaming local mp4 file -> rtmp://$TG_RTMP/$TG_KEY"
 
     ffmpeg -hide_banner -loglevel warning \
-      -f lavfi -i "color=c=black:s=1080x1920:r=${FPS}" \
-      -i music.mp3 \
-      -shortest \
+      -re -stream_loop -1 -i music.mp4 \
+      -vf "scale=1080:-2, pad=1080:1920:(ow-iw)/2:(oh-ih)/2, fps=${FPS}" \
       -c:v libx264 -preset "${X264_PRESET}" -b:v "${VIDEO_BITRATE}" -maxrate "${VIDEO_BITRATE}" -bufsize "$((2*${VIDEO_BITRATE%k}))k" \
       -c:a aac -b:a "${AUDIO_BITRATE}" -ar 44100 \
       -f flv "rtmp://$TG_RTMP/$TG_KEY"
@@ -23,4 +22,5 @@ fi
   done
 ) &
 
+# Health-check для Render
 python3 -m http.server 8080
