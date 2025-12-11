@@ -8,10 +8,10 @@ fi
 
 (
   while true; do
-    echo "Streaming mp4 from Google Drive direct link -> rtmp://$TG_RTMP/$TG_KEY"
+    echo "Streaming mp4 from Dropbox -> rtmp://$TG_RTMP/$TG_KEY"
 
     ffmpeg -hide_banner -loglevel warning \
-      -re -stream_loop -1 -i "https://drive.usercontent.google.com/download?id=1Bj5c2QXScUQQRI469euvST5PFfaUu_e3&export=download&authuser=0" \
+      -re -stream_loop -1 -i "https://www.dropbox.com/scl/fi/ull7j5mnodq304xazz0ew/music.mp4?rlkey=2zkeaifcx1k730bwk0nq9ri9e&st=ga5rkro9&dl=1" \
       -vf "scale=1080:-2, pad=1080:1920:(ow-iw)/2:(oh-ih)/2, fps=${FPS}" \
       -c:v libx264 -preset "${X264_PRESET}" -b:v "${VIDEO_BITRATE}" -maxrate "${VIDEO_BITRATE}" -bufsize "$((2*${VIDEO_BITRATE%k}))k" \
       -c:a aac -b:a "${AUDIO_BITRATE}" -ar 44100 \
