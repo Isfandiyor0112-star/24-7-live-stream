@@ -5,8 +5,7 @@ URL="https://www.dropbox.com/scl/fi/ull7j5mnodq304xazz0ew/music.mp4?rlkey=2zkeai
 FILE="music.mp4"
 
 echo "Downloading $FILE from Dropbox..."
-# Показываем прогресс в процентах
-curl -L --progress-bar "$URL" -o "$FILE"
+wget --progress=dot:mega -O "$FILE" "$URL"
 
 echo "Download finished. Starting stream..."
 
@@ -15,12 +14,16 @@ if [ -z "$TG_RTMP" ] || [ -z "$TG_KEY" ]; then
   exit 1
 fi
 
+# Запускаем фиктивный HTTP‑сервер для Render health‑check
+python3 -m http.server 8080 &
+
+# Основной цикл стрима
 while true; do
   ffmpeg -hide_banner -loglevel warning \
     -re -stream_loop -1 -i "$FILE" \
-    -vf "scale=720:-2, pad=720:1280:(ow-iw)/2:(oh-ih)/2, fps=25" \
-    -c:v libx264 -preset ultrafast -b:v 800k -maxrate 800k -bufsize 1600k \
-    -c:a aac -b:a 96k -ar 44100 \
+    -vf "scale=640:-2, pad=640:960:(ow-iw)/2:(oh-ih)/2, fps=20" \
+    -c:v libx264 -preset ultrafast -b:v 600k -maxrate 600k -bufsize 2000k \
+    -c:a aac -b:a 64k -ar 44100 \
     -f flv "$TG_RTMP/$TG_KEY"
 
   echo "FFmpeg exited. Reconnect in 5s..."
