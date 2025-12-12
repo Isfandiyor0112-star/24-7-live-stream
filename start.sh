@@ -25,7 +25,7 @@ while true; do
   for FILE in "${FILES[@]}"; do
     ffmpeg -hide_banner -loglevel warning \
       -re -i "$FILE" \
-      -vf "scale=640:-2, fps=20" \
+      -vf "scale=1280:-2, fps=20" \
       -c:v libx264 -preset ultrafast -b:v 600k -maxrate 600k -bufsize 2000k \
       -c:a aac -b:a 64k -ar 44100 \
       -f flv "$TG_RTMP/$TG_KEY"
