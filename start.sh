@@ -1,31 +1,33 @@
 #!/bin/bash
 set -e
 
-URL="https://www.dropbox.com/scl/fi/ull7j5mnodq304xazz0ew/music.mp4?rlkey=2zkeaifcx1k730bwk0nq9ri9e&st=ga5rkro9&dl=1"
-FILE="music.mp4"
+# Список Dropbox ссылок (каждая с ?dl=1)
+URLS=(
+  "https://www.dropbox.com/scl/fi/0mv77533xk7bd603cjp9l/videoplayback.mp4?rlkey=s8rl59kao2s7gkgxyl7nmzhs6&st=dm1ba4pw&dl=1"
+  "https://www.dropbox.com/scl/fi/ull7j5mnodq304xazz0ew/music.mp4?rlkey=2zkeaifcx1k730bwk0nq9ri9e&st=dvtllf90&dl=1"
+)
 
-echo "Downloading $FILE from Dropbox..."
-wget --progress=dot:mega -O "$FILE" "$URL"
+FILES=()
 
-echo "Download finished. Starting stream..."
+# Скачиваем все файлы
+for URL in "${URLS[@]}"; do
+  NAME=$(basename "$URL" | cut -d'?' -f1)   # имя файла
+  wget --progress=dot:mega -O "$NAME" "$URL"
+  FILES+=("$NAME")
+done
 
-if [ -z "$TG_RTMP" ] || [ -z "$TG_KEY" ]; then
-  echo "Missing env: TG_RTMP, TG_KEY"
-  exit 1
-fi
+echo "Все файлы скачаны: ${FILES[@]}"
 
-# Запускаем фиктивный HTTP‑сервер для Render health‑check
-python3 -m http.server 8080 &
+python3 -m http.server 8080 &  # health-check для Render
 
-# Основной цикл стрима
+# Цикл стрима: проигрываем по очереди все файлы
 while true; do
-  ffmpeg -hide_banner -loglevel warning \
-    -re -stream_loop -1 -i "$FILE" \
-    -vf "scale=640:-2, pad=640:960:(ow-iw)/2:(oh-ih)/2, fps=20" \
-    -c:v libx264 -preset ultrafast -b:v 600k -maxrate 600k -bufsize 2000k \
-    -c:a aac -b:a 64k -ar 44100 \
-    -f flv "$TG_RTMP/$TG_KEY"
-
-  echo "FFmpeg exited. Reconnect in 5s..."
-  sleep 5
+  for FILE in "${FILES[@]}"; do
+    ffmpeg -hide_banner -loglevel warning \
+      -re -i "$FILE" \
+      -vf "scale=640:-2, fps=20" \
+      -c:v libx264 -preset ultrafast -b:v 600k -maxrate 600k -bufsize 2000k \
+      -c:a aac -b:a 64k -ar 44100 \
+      -f flv "$TG_RTMP/$TG_KEY"
+  done
 done
